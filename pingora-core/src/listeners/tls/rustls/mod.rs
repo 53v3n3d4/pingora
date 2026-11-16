@@ -56,7 +56,8 @@ impl TlsSettings {
     /// Todo: Return a result instead of panicking XD
     pub fn build(self) -> Acceptor {
         // rustls 0.23+ requires an explicit CryptoProvider.
-        pingora_rustls::install_default_crypto_provider();
+        // pingora_rustls::install_default_crypto_provider();
+        pingora_rustls::setup_crypto_provider();
 
         let builder =
             ServerConfig::builder_with_protocol_versions(&[&version::TLS12, &version::TLS13]);

@@ -41,9 +41,9 @@ pub use rustls::{
 /// rustls 0.23+ requires an explicit provider. This function installs `ring`
 /// as the process-level default. Safe to call multiple times — subsequent
 /// calls are no-ops.
-pub fn install_default_crypto_provider() {
-    let _ = CryptoProvider::install_default(rustls::crypto::ring::default_provider());
-}
+// pub fn install_default_crypto_provider() {
+//     let _ = CryptoProvider::install_default(rustls::crypto::ring::default_provider());
+// }
 pub use rustls_native_certs::load_native_certs;
 use rustls_pemfile::Item;
 pub use rustls_pki_types::{CertificateDer, PrivateKeyDer, ServerName, UnixTime};
@@ -185,7 +185,22 @@ pub fn load_pem_file_private_key(path: &String) -> Result<Vec<u8>> {
         .unwrap_or_default())
 }
 
+#[cfg(any(feature = "aws-lc-rs", feature = "ring"))]
 pub fn hash_certificate(cert: &CertificateDer) -> Vec<u8> {
-    let hash = ring::digest::digest(&ring::digest::SHA256, cert.as_ref());
+    #[cfg(feature = "aws-lc-rs")]
+    use aws_lc_rs::digest;
+    #[cfg(feature = "ring")]
+    use ring::digest;
+
+    let hash = digest::digest(&digest::SHA256, cert.as_ref());
     hash.as_ref().to_vec()
+}
+
+pub fn setup_crypto_provider() {
+    if CryptoProvider::get_default().is_none() {
+        #[cfg(feature = "aws-lc-rs")]
+        let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+        #[cfg(feature = "ring")]
+        let _ = rustls::crypto::ring::default_provider().install_default();
+    }
 }
